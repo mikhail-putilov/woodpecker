@@ -81,12 +81,9 @@ func Create(ctx context.Context, _store store.Store, repo *model.Repo, pipeline 
 
 	if len(pipelineItems) == 0 {
 		log.Debug().Str("repo", repo.FullName).Msg(ErrFiltered.Error())
-		log.Debug().Msg(fmt.Sprintf("%v - %v", pipeline.Status, pipeline.Created))
-
 		if err := updatePipelineSkipped(_store, pipeline, repo); err != nil {
 			return nil, err
 		}
-
 		return nil, ErrFiltered
 	}
 
