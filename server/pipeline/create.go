@@ -81,6 +81,12 @@ func Create(ctx context.Context, _store store.Store, repo *model.Repo, pipeline 
 
 	if len(pipelineItems) == 0 {
 		log.Debug().Str("repo", repo.FullName).Msg(ErrFiltered.Error())
+		log.Debug().Msg(fmt.Sprintf("%v - %v", pipeline.Status, pipeline.Created))
+
+		if err := updatePipelineSkipped(_store, pipeline, repo); err != nil {
+			return nil, err
+		}
+
 		return nil, ErrFiltered
 	}
 
@@ -132,6 +138,20 @@ func updatePipelineWithErr(ctx context.Context, _store store.Store, pipeline *mo
 	}
 
 	publishPipeline(ctx, pipeline, repo, repoUser)
+
+	return nil
+}
+
+func updatePipelineSkipped(_store store.Store, pipeline *model.Pipeline, repo *model.Repo) error {
+	pipeline.Created = 0
+	pipeline.Enqueued = 0
+	pipeline.Status = model.StatusSkipped
+	dbErr := _store.UpdatePipeline(pipeline)
+	if dbErr != nil {
+		msg := fmt.Errorf("failed to save pipeline for %s", repo.FullName)
+		log.Error().Err(dbErr).Msg(msg.Error())
+		return msg
+	}
 
 	return nil
 }
